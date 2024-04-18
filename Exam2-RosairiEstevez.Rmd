@@ -1,0 +1,206 @@
+---
+title: "Exam 2 - Rosairi Estevez"
+output: html_document
+date: "2024-04-18"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Rosairi Estevez
+## Exam 2 - PSY V0500
+### April 18
+
+```{r}
+require(plyr)
+require(dplyr)
+require(tidyverse)
+require(ggplot2)
+require(stargazer)
+
+require(rpart)
+require(rpart.plot)
+```
+
+
+# **Question 1 - Marital status and loneliness**
+
+*Group A - Age 15 - 25 + lonely, n = 2268*
+(569 / 2268) pro1 = 0.250
+
+*Group B - Age 25 - 35 + lonely, n = 9148*
+(1478 / 9148) pro2 = 0.161
+
+`Ho: Group A = Group B`
+The rate of loneliness in Group A and Group B will be the same. 
+
+`Ha: Group A ≠ Group B`
+The rate of loneliness in Group A and Group B will NOT be the same.
+
+sig. level = p: 0.05
+
+```{r}
+rm(list = ls())
+prop.test(x=c(569, 1478), n=c(2268, 9148), alternative="two.sided", conf.level =0.95, correct = FALSE)
+```
+
+`point estimate = 0.251 - 0.161 = 0.09`
+
+`p val = 2.2e-16`
+
+`standard error = 0.0089`
+
+`t-stat = 9.9258`
+
+`CI = [0.6994, 0.1086]`
+
+The null hypothesis states that individuals from ages 15 - 25 will show no difference in loneliness compared to individuals from ages 25 - 35, meanwhile the alt. hypothesis states that individuals from ages 15 - 25 will have differences and will not be the same as individuals from ages 25 - 35 in rates of loneliness. Based on the t stat (9.925) not landing within the 95% region of acceptance (-1.95, 1.95), the null hypothesis is rejected as there is sig. differences of rates of loneliness between Group A and Group B. 
+
+# **Question 2 - Marital Status and Loneliness** 
+
+```{r}
+xtabs(~ Household_Pulse_data$MS + Household_Pulse_data$EEDUC + Household_Pulse_data$SOCIAL2)
+```
+
+
+Group A - 4 yr degree and more + married 
+n = 31969
+p1 = 0.65 (20927/31969)
+
+Group B - not 4yr degree + married
+n = 28142
+p2 = 0.53 (15022/28142)
+
+Ho: Group A = Group B
+There will be no difference in Group A or Group B of individuals married and having a 4 yr degree + more or not having a 4 yr degree.  
+
+Ha: Group A ≠ Group B
+There will be a difference between individuals who are married and having a 4 yr degree + more or not having a 4 yr degree. 
+
+sig. level = 0.05
+
+```{r}
+rm(list = ls())
+prop.test(x=c(20927, 15022), n=c(31969, 28142), alternative="two.sided", conf.level =0.95, correct = FALSE)
+```
+
+`point estimate: 0.12`
+
+`p - val: 2.2e-16`
+
+`standard error: 0.004`
+
+`test stat: 30.145`
+
+`CI = [0.1129, 0.1286]`
+
+The null hypothesis being that there will be no difference between married individuals in their likelihood of having a 4yr degree or more, or not having a 4 yr degree, and the alternative hypothesis being that there will be a difference in individuals who are married and having a 4 yr degree + more or not having a 4 yr degree. Due to the t-stat (30.145), not being in the 95% region of acceptance (-0.017, 0.017), we have to reject the null hypothesis as there is a difference in married individuals and having a 4yr degree or more versus not. 
+
+
+# **Question 3**
+
+Other variables that may be relevant in predicting loneliness can be depression, support in being with friends or family, state that they reisde in, and race mixed with being hispanic.
+
+
+```{r}
+levels(Household_Pulse_data$SOCIAL2)
+```
+
+```{r}
+select1 <- (Household_Pulse_data$SOCIAL2 !="NA")
+d_lonely <- subset(Household_Pulse_data, select1)
+```
+
+```{r}
+d_lonely$LONELY <- as.numeric(
+  (d_lonely$SOCIAL2 == "always lonely") |
+  (d_lonely$SOCIAL2 == "usually"))
+ 
+```
+
+```{r}
+ols_out1 <- lm(LONELY ~ -1 + DOWN + SUPPORT1 + REGION + RRACE*RHISPANIC, data = d_lonely )
+stargazer(ols_out1, type = "text")
+```
+
+```{r}
+ols_out2 <- lm(LONELY ~ -1 + TBIRTH_YEAR + ANXIOUS + SUPPORT4 + KINDWORK + INCOME, data = d_lonely )
+stargazer(ols_out2, type = "text")
+```
+
+
+## 3a. I chose depression, race, hispanic, region, and support 1(whether they speak with friends or family) It showed that variables such as depression and lack of communication (less than once a week) with family, friends all lead to higher rates of loneliness. In terms of race, Black, Hispanic and people who identify as other in race also significantly correlated with higher rates of loneliness. If we add age which I will presume is birth year, as well including some other interaction terms such as anxiety, and support 4 (attending public community events). Anxiety did have significant correlates with loneliness in all levels, but suprisingly aspects like attending clubs 1 or 2, or even 4 times a week was also a significant correlate of loneliness as well. 
+
+
+## 3b. The estimates do seem plausible, significatly aspects such as depression and anxiety significantly correlate with loneliness, but real life world factors do as well. Things like kind of work, where every work except family business correlated with loneliness significantly, all income except middle level (50 - 75k) were sig. predictors of loneliness as well. 
+
+## 3c. 
+```{r}
+anova(ols_out1, ols_out2)
+```
+
+
+
+## **Question 4.**
+
+Now, less variables came up as significant in the logit model and new significance appeared. Asian race groups were sig. correlated with loneliness, being black and hispanic stayed the same. Working for government came up as non-sig. unlike the results back in question 3. Instead of middle income being non-sig., it is now sig. while income between 35 - 50k is non-sig. 
+
+```{r}
+logit_out1 <- glm(LONELY ~ DOWN + SUPPORT1 + REGION + RRACE * RHISPANIC + TBIRTH_YEAR + ANXIOUS + SUPPORT4 + KINDWORK + INCOME, data = d_lonely, family = binomial)
+
+```
+
+```{r}
+stargazer(ols_out1, logit_out1, type = "text")
+```
+## **Question 5.**
+
+```{r}
+d_lonely_for_tree <- select(d_lonely,-SOCIAL2)
+tree_mod1 <- rpart(LONELY ~ ., data = d_lonely_for_tree, method = "class", cp = 0.01)
+
+```
+
+```{r}
+tree_mod1
+```
+
+```{r}
+rpart.plot(tree_mod1)
+```
+
+### From here we can see that highest predictors of loneliness are NA answers for depression, feeling depressed the past 2 weeks, or several. As well as always, usually, or sometimes getting social support, as well as being married. 
+
+```{r}
+d_lonely_for_tree2 <- select(d_lonely, - RRACE, - ANYWORK, - DOWN, - SOCIAL1, - SOCIAL2, - SUPPORT1, - SUPPORT2, - MS)
+
+tree_mod2 <- rpart(LONELY ~ ., data = d_lonely_for_tree2, method = "class", cp = 0.001)
+tree_mod2
+```
+```{r}
+rpart.plot(tree_mod2)
+```
+
+## Other graphs
+
+```{r}
+p_lonely_dep <- ggplot(d_lonely, aes(x = DOWN, fill = SOCIAL2))
+p_lonely_dep + geom_bar(position = "fill") + 
+  scale_fill_viridis_d(option = "mako", begin = 0.3, end = 0.5)
+
+```
+
+```{r}
+ggplot(d_lonely, aes (x = RRACE, fill = SOCIAL2)) + geom_bar()
+```
+
+```{r}
+p_lonely_byjob <- ggplot(d_lonely, aes(x = GENID_DESCRIBE, fill = SOCIAL2))
+```
+
+```{r}
+p_lonely_byjob + geom_bar(position = "fill") + 
+  scale_fill_viridis_d(option = "mako", begin = 0.3, end = 0.85) + 
+  facet_grid(~RRACE)
+```
+
